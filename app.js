@@ -2,6 +2,7 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const fs = require('fs');
+require('dotenv').config();  // Memuat file .env di awal
 
 const app = express();
 const pool = new Pool({
@@ -89,6 +90,41 @@ app.post('/api/products', async (req, res) => {
         res.status(500).send('Error saving product');
     }
 });
+
+// Endpoint untuk menyimpan pendapatan pribadi
+app.post('/api/personal-income', async (req, res) => {
+    const { kategori, subkategori, jumlah, date } = req.body;
+
+    try {
+        const insertQuery = `
+            INSERT INTO personal_income (kategori, subkategori, jumlah, date)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id;
+        `;
+        const result = await pool.query(insertQuery, [kategori, subkategori, jumlah, date]);
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error saving personal income');
+    }
+});
+// Endpoint untuk mengambil semua data pendapatan pribadi
+app.get('/api/personal-income', async (req, res) => {
+    try {
+        const query = `
+            SELECT id, kategori, subkategori, jumlah, date, created_at
+            FROM personal_income
+            ORDER BY created_at DESC;
+        `;
+        const result = await pool.query(query);
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error fetching personal income');
+    }
+});
+
+
 
 // Start server
 const PORT = 5000;
